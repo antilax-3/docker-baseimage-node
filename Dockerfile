@@ -23,7 +23,8 @@ apk add --no-cache --virtual=build-dependencies \
     python && \
 echo "**** install runtime packages ****" && \
 apk add --no-cache \
-    libstdc++ && \
+    libstdc++ \
+    libcap && \
 echo "**** build node and yarn binaries ****" && \
 for key in \
     94AE36675C464D64BAFA68DD7434390BDBE9B9C5 \
@@ -58,6 +59,7 @@ mkdir -p /opt/yarn && \
 tar -xzf yarn-v$YARN_VERSION.tar.gz -C /opt/yarn --strip-components=1 && \
 ln -s /opt/yarn/bin/yarn /usr/local/bin/yarn && \
 ln -s /opt/yarn/bin/yarn /usr/local/bin/yarnpkg && \
+setcap cap_net_bind_service=+ep `which node` && \
 echo "**** cleanup ****" && \
 apk del --purge \
     build-dependencies && \

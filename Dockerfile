@@ -3,6 +3,8 @@ FROM antilax3/alpine
 # set version label
 ARG build_date
 ARG version
+LABEL build_date="${build_date}"
+LABEL version="${version}"
 LABEL maintainer="Nightah"
 
 # set versions for node and yarn

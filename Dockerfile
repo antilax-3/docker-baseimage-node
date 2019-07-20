@@ -8,8 +8,8 @@ LABEL version="${version}"
 LABEL maintainer="Nightah"
 
 # set versions for node and yarn
-ARG NODE_VERSION="11.7.0"
-ARG YARN_VERSION="1.13.0"
+ARG NODE_VERSION="11.15.0"
+ARG YARN_VERSION="1.15.2"
 
 RUN \
 echo "**** install build packages ****" && \

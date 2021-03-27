@@ -8,7 +8,7 @@ LABEL version="${version}"
 LABEL maintainer="Nightah"
 
 # set versions for node and yarn
-ARG NODE_VERSION="15.9.0"
+ARG NODE_VERSION="15.12.0"
 ARG YARN_VERSION="1.22.5"
 
 RUN \
@@ -19,7 +19,7 @@ apk add --no-cache \
 echo "**** install build packages ****" && \
 apk add --no-cache --virtual=build-dependencies \
     curl && \
-CHECKSUM="22933447b8fadeab8b5bbcf54753a52102d9de90a71ebca1386331a02a3661ef" && \
+CHECKSUM="15e808c523cfaef5da89e36e49afa66077dc3fe91e8e0d374c83ea1ab0f28aee" && \
 if [ -n "${CHECKSUM}" ]; then \
     set -eu; \
     curl -fsSLO --compressed "https://unofficial-builds.nodejs.org/download/release/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64-musl.tar.xz"; \

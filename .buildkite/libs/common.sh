@@ -15,9 +15,9 @@ REPOSITORY_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 GITHUB_REPOSITORY="antilax-3/docker-baseimage-node"
 DOCKER_REPOSITORY="antilax3/node"
 REGISTRY="docker.io"
-# Platforms every image is built for, by the short name used in test step keys and labels. Node is amd64 only:
-# unofficial-builds publishes no musl tarball for the pinned release on any other architecture.
-PLATFORMS="amd64"
+# Platforms every image is built for, by the short name used in test step keys and labels. armv7 is absent because
+# unofficial-builds publishes no musl tarball for it and node stopped publishing 32 bit arm binaries at v24.
+PLATFORMS="amd64 arm64"
 
 DOCKERFILE="${REPOSITORY_ROOT}/Dockerfile"
 # The Node release, e.g. 24.3.0, from the Dockerfile's NODE_VERSION build arg, and its series (24.3) and major

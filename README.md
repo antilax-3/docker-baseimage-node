@@ -26,5 +26,6 @@ lefthook run pre-commit --all-files
 
 `NODE_VERSION` and `YARN_VERSION` are managed by renovate, and nothing else has to move with them. Node's checksum is
 read from the `SHASUMS256.txt` that [unofficial-builds.nodejs.org](https://unofficial-builds.nodejs.org) publishes
-beside the tarball, and the build fails with a plain message if a release publishes no `linux-x64-musl` build. Yarn's
+beside the tarball, and the build fails with a plain message if a release publishes no musl build for the
+architecture being built. Yarn's
 tarball is verified against its release signature.

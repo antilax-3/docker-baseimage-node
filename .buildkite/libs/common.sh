@@ -18,6 +18,10 @@ REGISTRY="docker.io"
 # Platforms every image is built for, by the short name used in test step keys and labels. armv7 is absent because
 # unofficial-builds publishes no musl tarball for it and node stopped publishing 32 bit arm binaries at v24.
 PLATFORMS="amd64 arm64"
+# Base images every variant is built on, in tag order. The first is the default variant and takes the unsuffixed
+# tags; the others take a tag suffix of their own name, following the docker-library convention.
+VARIANTS="wolfi alpine"
+DEFAULT_VARIANT="wolfi"
 
 DOCKERFILE="${REPOSITORY_ROOT}/Dockerfile"
 # The Node release, e.g. 24.3.0, from the Dockerfile's NODE_VERSION build arg, and its series (24.3) and major
@@ -26,10 +30,30 @@ NODE_RELEASE=$(sed -nE 's/^ARG NODE_VERSION="([0-9]+\.[0-9]+\.[0-9]+)"$/\1/p' "$
 NODE_SERIES="${NODE_RELEASE%.*}"
 NODE_MAJOR="${NODE_RELEASE%%.*}"
 
-# Test jobs keyed "test-<platform>" get their platform from the step key, so steps don't each need it in env.
+# Test jobs keyed "test-<variant>-<platform>" get both from the step key, so steps don't each need them in env.
+# Neither a variant nor a platform name contains a dash, so the split is unambiguous.
 if [[ "${BUILDKITE_STEP_KEY:-}" == test-* ]]; then
-  PLATFORM="${BUILDKITE_STEP_KEY#test-}"
+  STEP_TARGET="${BUILDKITE_STEP_KEY#test-}"
+  VARIANT="${STEP_TARGET%%-*}"
+  PLATFORM="${STEP_TARGET#*-}"
 fi
+
+# Prints the base image a variant is built on.
+variant_base() {
+  case "${1}" in
+    wolfi) echo "antilax3/wolfi:latest" ;;
+    alpine) echo "antilax3/alpine:latest" ;;
+  esac
+}
+
+# Prints the tag suffix a variant's tags carry, empty for the default variant.
+variant_suffix() {
+  if [[ "${1}" == "${DEFAULT_VARIANT}" ]]; then
+    echo ""
+  else
+    echo "-${1}"
+  fi
+}
 
 # Prints the Docker platform for a short platform name, e.g. armv7 -> linux/arm/v7.
 docker_platform() {
@@ -58,17 +82,26 @@ sanitize_tag() {
 #                 fork PRs     -> PR<number> (Buildkite prefixes fork branch names with owner:)
 #                 master       -> latest, <major>, <series> and <release>, e.g. latest 24 24.3 24.3.0
 #               and always BK<build>
+#
+# Every tag of a non-default variant carries that variant's suffix, except the one standing in for latest, which is
+# the bare variant name: the alpine variant of the above is alpine, 24-alpine, 24.3-alpine, 24.3.0-alpine.
+#
+# $1 - the variant, defaulting to DEFAULT_VARIANT
 resolve_image() {
-  BUILD_TAG="BK${BUILDKITE_BUILD_NUMBER}"
+  local variant="${1:-${DEFAULT_VARIANT}}" suffix
+  suffix="$(variant_suffix "${variant}")"
+
+  BUILD_TAG="BK${BUILDKITE_BUILD_NUMBER}${suffix}"
   IMAGE="${REGISTRY}/${DOCKER_REPOSITORY}:${BUILD_TAG}"
   TAGS=""
 
   if [[ "${BUILDKITE_BRANCH}" != "master" ]] && [[ ! "${BUILDKITE_BRANCH}" =~ .*:.* ]]; then
-    TAGS="$(sanitize_tag "${BUILDKITE_BRANCH}")"
+    TAGS="$(sanitize_tag "${BUILDKITE_BRANCH}")${suffix}"
   elif [[ "${BUILDKITE_BRANCH}" =~ .*:.* ]]; then
-    TAGS="PR${BUILDKITE_PULL_REQUEST}"
+    TAGS="PR${BUILDKITE_PULL_REQUEST}${suffix}"
   elif master; then
-    TAGS="latest ${NODE_MAJOR} ${NODE_SERIES} ${NODE_RELEASE}"
+    TAGS="${suffix:-latest} ${NODE_MAJOR}${suffix} ${NODE_SERIES}${suffix} ${NODE_RELEASE}${suffix}"
+    TAGS="${TAGS#-}"
   fi
 
   TAGS+=" ${BUILD_TAG}"

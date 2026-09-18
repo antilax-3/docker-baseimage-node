@@ -9,7 +9,7 @@ if [[ "${BUILDKITE_LABEL}" =~ ^:docker:\ Build\ and\ Deploy ]]; then
 fi
 
 if [[ "${BUILDKITE_LABEL}" =~ ^:test_tube:\ Test\ Image ]]; then
-  resolve_image
+  resolve_image "${VARIANT}"
   resolve_platform_image "${PLATFORM}" || exit 1
   export DOCKER_PLATFORM PLATFORM_IMAGE
 

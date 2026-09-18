@@ -4,13 +4,20 @@ set -u
 # shellcheck source=/dev/null
 source "$(dirname "${BASH_SOURCE[0]}")/../libs/common.sh"
 
-resolve_image
+resolve_image "${VARIANT}"
 resolve_platform_image "${PLATFORM}" || exit 1
 
 case "${PLATFORM}" in
-  amd64) ALPINE_ARCH="x86_64"; ELF_MACHINE="62" ;;
-  arm64) ALPINE_ARCH="aarch64"; ELF_MACHINE="183" ;;
-  armv7) ALPINE_ARCH="armv7"; ELF_MACHINE="40" ;;
+  amd64) APK_ARCH="x86_64"; ELF_MACHINE="62" ;;
+  arm64) APK_ARCH="aarch64"; ELF_MACHINE="183" ;;
+  armv7) APK_ARCH="armv7"; ELF_MACHINE="40" ;;
+esac
+
+# The variants differ in libc, in which package ships setcap, and in the interpreter every binary is linked against.
+# Wolfi also ships no getent, so the user database is read out of /etc/passwd, which both bases have.
+case "${VARIANT}" in
+  wolfi) OS_ID="wolfi"; LIBC="glibc"; INTERPRETER="/lib/ld-linux-*"; CAP_PACKAGE="libcap-utils" ;;
+  alpine) OS_ID="alpine"; LIBC="musl"; INTERPRETER="/lib/ld-musl-*"; CAP_PACKAGE="libcap" ;;
 esac
 
 REVISION="${BUILDKITE_COMMIT}"
@@ -52,14 +59,18 @@ check "OCI version label is ${BUILD_TAG}" "${BUILD_TAG}" "$(docker image inspect
 check "OCI created label is an RFC 3339 timestamp" "valid" \
   "$(docker image inspect -f '{{index .Config.Labels "org.opencontainers.image.created"}}' "${PLATFORM_IMAGE}" | grep -qE '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$' && echo valid)"
 
-echo "--- :alpine: Inherited base image"
-check "apk architecture is ${ALPINE_ARCH}" "${ALPINE_ARCH}" "$(run "" "apk --print-arch")"
-check "abc passwd entry" "abc:911:911:/config:/bin/false" "$(run "" "getent passwd abc | cut -d: -f1,3,4,6,7")"
+echo "--- :package: Inherited base image [${VARIANT}]"
+check "base is ${OS_ID}" "${OS_ID}" "$(run "" ". /etc/os-release; echo \${ID}")"
+check "apk architecture is ${APK_ARCH}" "${APK_ARCH}" "$(run "" "apk --print-arch")"
+check "libc is ${LIBC}" "found" "$(run "" "ls ${INTERPRETER} > /dev/null 2>&1 && echo found")"
+check "abc passwd entry" "abc:911:911:/config:/bin/false" \
+  "$(run "" "grep '^abc:' /etc/passwd | cut -d: -f1,3,4,6,7")"
+check "abc is in the users group" "yes" "$(run "" "id -nG abc | tr ' ' '\\n' | grep -qx users && echo yes")"
 check "container keeps s6 supervision" "0" "$(docker run --rm --platform "${DOCKER_PLATFORM}" "${PLATFORM_IMAGE}" true > /dev/null 2>&1; echo $?)"
 
 echo "--- :nodejs: Node ${NODE_RELEASE}"
 check "node version is ${NODE_RELEASE}" "v${NODE_RELEASE}" "$(run "" "node --version")"
-check "node is built for ${ALPINE_ARCH}" "${ELF_MACHINE}" "$(run "" "od -An -tu2 -j18 -N2 /usr/local/bin/node" | xargs)"
+check "node is built for ${APK_ARCH}" "${ELF_MACHINE}" "$(run "" "od -An -tu2 -j18 -N2 /usr/local/bin/node" | xargs)"
 check "nodejs symlink resolves to node" "/usr/local/bin/node" "$(run "" "readlink -f /usr/local/bin/nodejs")"
 check "node can bind a privileged port unprivileged" "ok" \
   "$(run "-u 911" "node -e 'require(\"net\").createServer().listen(80,()=>{console.log(\"ok\");process.exit(0)})'")"
@@ -71,8 +82,9 @@ check "yarnpkg version is ${YARN_RELEASE}" "${YARN_RELEASE}" "$(run "" "yarnpkg 
 check "yarn is installed under /opt" "/opt/yarn-v${YARN_RELEASE}/bin/yarn" "$(run "" "readlink -f /usr/local/bin/yarn")"
 
 echo "--- :package: Packages"
-check "runtime packages are installed" "libstdc++ libcap" \
-  "$(run "" "for p in libstdc++ libcap; do apk info -e \$p; done" | xargs)"
+check "runtime packages are installed" "libstdc++ ${CAP_PACKAGE}" \
+  "$(run "" "for p in libstdc++ ${CAP_PACKAGE}; do apk info -e \$p; done" | xargs)"
+check "setcap is available for the build" "ok" "$(run "" "command -v setcap > /dev/null && echo ok")"
 check "build dependencies are removed" "" \
   "$(run "" "for p in build-dependencies curl gnupg tar xz; do apk info -e \$p; done" | xargs)"
 check "no build artefacts are left behind" "" \

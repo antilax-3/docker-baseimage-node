@@ -8,7 +8,9 @@ LABEL version="${version}"
 LABEL maintainer="Nightah"
 
 # set versions for node and yarn
+# renovate: datasource=node-version depName=node
 ARG NODE_VERSION="24.3.0"
+# renovate: datasource=github-releases depName=yarnpkg/yarn
 ARG YARN_VERSION="1.22.22"
 
 RUN \
@@ -19,7 +21,9 @@ apk add --no-cache \
 echo "**** install build packages ****" && \
 apk add --no-cache --virtual=build-dependencies \
     curl && \
-CHECKSUM="6426c55f7b2817320d952dd7ea4a2a39ed90157c21eb63a5ff144b6bb9d018ad" && \
+# the sha256 of this release's musl tarball, published alongside it; unset when the release has no musl
+# build, which falls through to the source build below
+CHECKSUM=$(curl -fsSL --compressed "https://unofficial-builds.nodejs.org/download/release/v$NODE_VERSION/SHASUMS256.txt" | grep " node-v$NODE_VERSION-linux-x64-musl.tar.xz\$" | cut -d" " -f1) && \
 if [ -n "${CHECKSUM}" ]; then \
     set -eu; \
     curl -fsSLO --compressed "https://unofficial-builds.nodejs.org/download/release/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64-musl.tar.xz"; \

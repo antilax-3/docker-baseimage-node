@@ -1,0 +1,46 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":semanticCommits",
+    ":semanticCommitTypeAll(build)",
+    ":separatePatchReleases"
+  ],
+  "ignorePresets": [
+    ":semanticPrefixFixDepsChoreOthers"
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Update Dockerfile ARG versions annotated with a preceding '# renovate: datasource=<datasource> depName=<depName>' comment, e.g. yarn.",
+      "managerFilePatterns": [
+        "/(^|/)Dockerfile$/"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+ARG [A-Z_]+=\"(?<currentValue>[^\"]+)\""
+      ]
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Node is pinned alongside a checksum that must be recomputed, so keep its bumps on their own branch.",
+      "matchDatasources": [
+        "node-version"
+      ],
+      "matchPackageNames": [
+        "node"
+      ],
+      "separateMinorPatch": true
+    },
+    {
+      "description": "Yarn tags releases as v<major>.<minor>.<patch>.",
+      "matchDatasources": [
+        "github-releases"
+      ],
+      "matchPackageNames": [
+        "yarnpkg/yarn"
+      ],
+      "extractVersion": "^v(?<version>.+)$"
+    }
+  ]
+}

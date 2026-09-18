@@ -24,10 +24,8 @@ lefthook run pre-commit --all-files
 
 ### Bumping node
 
-`NODE_VERSION` and `YARN_VERSION` are managed by renovate. The sha256 of node's musl tarball is read from the
-`SHASUMS256.txt` that [unofficial-builds.nodejs.org](https://unofficial-builds.nodejs.org) publishes beside it, so a
-version bump needs no other change. A release with no musl build leaves the checksum unset and falls through to
-building node from source, where the checksum comes from the gpg signed manifest on nodejs.org.
-
-The release keys used by that fallback are kept in step with
-[nodejs/docker-node](https://github.com/nodejs/docker-node), which this Dockerfile is derived from.
+`NODE_VERSION` and `YARN_VERSION` are managed by renovate, and nothing else has to move with them. Node's checksum is
+read from the `SHASUMS256.txt` that [unofficial-builds.nodejs.org](https://unofficial-builds.nodejs.org) publishes
+beside the tarball, and the build fails with a plain message if a release publishes no musl build for the
+architecture being built. Yarn's
+tarball is verified against its release signature.

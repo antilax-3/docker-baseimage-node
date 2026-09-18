@@ -7,8 +7,4 @@ ignored:
   # The base image is deliberately followed at latest and not pinned, so every build picks up its changes without
   # a bump in this repository.
   - DL3007
-  # The one RUN step cds into the unpacked node source and pipes through sha256sum. Both go away when it is
-  # restructured as a heredoc under a pipefail shell.
-  - DL3003
-  - DL4006
 ...

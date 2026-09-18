@@ -74,7 +74,7 @@ echo "--- :package: Packages"
 check "runtime packages are installed" "libstdc++ libcap" \
   "$(run "" "for p in libstdc++ libcap; do apk info -e \$p; done" | xargs)"
 check "build dependencies are removed" "" \
-  "$(run "" "for p in build-dependencies build-dependencies-full build-dependencies-yarn curl gnupg tar; do apk info -e \$p; done" | xargs)"
+  "$(run "" "for p in build-dependencies curl gnupg tar xz; do apk info -e \$p; done" | xargs)"
 check "no build artefacts are left behind" "" \
   "$(run "" "ls -d /node-v* /yarn-v* /SHASUMS256.txt* /tmp/* 2> /dev/null" | xargs)"
 

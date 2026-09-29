@@ -33,7 +33,7 @@ EOF
 if master; then
 cat << EOF
         concurrency: 1
-        concurrency_group: "antilax3-node-deployments"
+        concurrency_group: "antilax3-node-${VARIANT}-deployments"
 EOF
 fi
 cat << EOF

@@ -11,7 +11,7 @@ LABEL maintainer="Nightah"
 
 # set versions for node and yarn
 # renovate: datasource=node-version depName=node
-ARG NODE_VERSION="24.22.1"
+ARG NODE_VERSION="24.22.2"
 # renovate: datasource=github-releases depName=yarnpkg/yarn
 ARG YARN_VERSION="1.22.22"
 
